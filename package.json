@@ -1,0 +1,24 @@
+{
+  "name": "react-native-double-date-picker",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alanwyf/react-native-double-date-picker.git"
+  },
+  "version": "0.1.0",
+  "description": "A date picker with double date selection",
+  "author": "Yuanfang Wang <19593300@qq.com>",
+  "nativePackage": true,
+  "license": "MIT",
+  "homepage": "https://github.com/alanwyf/react-native-double-date-picker",
+  "keywords": [
+    "react-native",
+    "react",
+    "native",
+    "date",
+    "picker",
+    "code",
+    "barcode"
+  ],
+  "dependencies": {
+  }
+}
