@@ -34,7 +34,7 @@ import android.view.View;
 import android.widget.DatePicker;
 import android.widget.DatePicker.OnDateChangedListener;
 
-import com.androidnativemodule.R;
+import com.alanwyf.doubleDatePicker.R;
 
 /**
  * A simple dialog containing an {@link DatePicker}.
