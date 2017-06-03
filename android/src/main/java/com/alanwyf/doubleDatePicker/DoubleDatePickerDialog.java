@@ -24,7 +24,6 @@ import java.util.Calendar;
 import java.util.Date;
 
 import android.app.AlertDialog;
-import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
@@ -35,6 +34,9 @@ import android.widget.DatePicker;
 import android.widget.DatePicker.OnDateChangedListener;
 
 import com.alanwyf.doubleDatePicker.R;
+import com.facebook.react.bridge.Promise;
+import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.ReadableMapKeySetIterator;
 
 /**
  * A simple dialog containing an {@link DatePicker}.
@@ -56,6 +58,8 @@ public class DoubleDatePickerDialog extends AlertDialog implements OnClickListen
     private final DatePicker mDatePicker_start;
     private final DatePicker mDatePicker_end;
     private final OnDateSetListener mCallBack;
+    private final Promise mPromise;
+    private String startDate = "", endDate = "", maxDate = "", language = "", buttonConfirmText = "确 定", buttonCancelText = "取 消";
 
     /**
      * The callback used to indicate the user is done filling in the date.
@@ -63,37 +67,65 @@ public class DoubleDatePickerDialog extends AlertDialog implements OnClickListen
     public interface OnDateSetListener {
 
         void onDateSet(DatePicker startDatePicker, int startYear, int startMonthOfYear, int startDayOfMonth,
-                       DatePicker endDatePicker, int endYear, int endMonthOfYear, int endDayOfMonth);
+                       DatePicker endDatePicker, int endYear, int endMonthOfYear, int endDayOfMonth, Promise promise);
     }
 
     /**
      * @param context     The context the dialog is to run in.
      * @param theme       the theme to apply to this dialog
      * @param callBack    How the parent is notified that the date is set.
-     * @param defaultStartDate
-     * @param defaultEndDate
-
+     * @param options         Options to set date picker
+     * @param mPromise    Result to be returned to JS
      */
-    public DoubleDatePickerDialog(Context context, int theme, OnDateSetListener callBack, String defaultStartDate, String defaultEndDate, boolean isDayVisible) {
+    public DoubleDatePickerDialog(Context context, int theme, OnDateSetListener callBack, ReadableMap options, boolean isDayVisible, Promise mPromise) {
         super(context, theme);
 
         mCallBack = callBack;
+        this.mPromise = mPromise;
+
+        try{
+            startDate = endDate = DateUtils.getAddDayString(0);
+            ReadableMapKeySetIterator keys = options.keySetIterator();
+            while(keys.hasNextKey()){
+                String key = keys.nextKey();
+                switch (key){
+                    case "startDate":
+                        startDate = options.getString(key);
+                        break;
+                    case "endDate":
+                        endDate = options.getString(key);
+                        break;
+                    case "maxDate":
+                        maxDate = options.getString(key);
+                        break;
+                    case "language":
+                        language = options.getString(key);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }catch(Exception e){
+            mPromise.reject("-1", e);
+        }
+        if(language.equals("English")){
+            buttonConfirmText = "OK";
+            buttonCancelText = "Cancel";
+        }
 
         Context themeContext = getContext();
-        setButton(BUTTON_POSITIVE, "确 定", this);
-        setButton(BUTTON_NEGATIVE, "取 消", this);
-        // setButton(BUTTON_POSITIVE,
-        // themeContext.getText(android.R.string.date_time_done), this);
+        setButton(BUTTON_POSITIVE, buttonConfirmText, this);
+        setButton(BUTTON_NEGATIVE, buttonCancelText, this);
         setIcon(0);
 
         SimpleDateFormat formatter = new SimpleDateFormat ("yyyy-MM-dd");
         Date st = new Date();
         Date et = new Date();
         try {
-            st = formatter.parse(defaultStartDate);
-            et = formatter.parse(defaultEndDate);
+            st = formatter.parse(startDate);
+            et = formatter.parse(endDate);
         } catch (ParseException e){
-            e.printStackTrace();
+            mPromise.reject("-1", e);
         }
 
         Calendar stCal = Calendar.getInstance();
@@ -103,27 +135,32 @@ public class DoubleDatePickerDialog extends AlertDialog implements OnClickListen
         etCal.setTime(et);
 
         LayoutInflater inflater = (LayoutInflater) themeContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        View view = inflater.inflate(R.layout.date_picker_dialog, null);
+        int layoutId  = R.layout.date_picker_dialog;
+        if(language.equals("English")){
+            layoutId = R.layout.date_picker_dialog_en;
+        }
+        View view = inflater.inflate(layoutId, null);
         setView(view);
         mDatePicker_start = (DatePicker) view.findViewById(R.id.datePickerStart);
         mDatePicker_end = (DatePicker) view.findViewById(R.id.datePickerEnd);
         mDatePicker_start.init(stCal.get(Calendar.YEAR), stCal.get(Calendar.MONTH), stCal.get(Calendar.DAY_OF_MONTH), this);
         mDatePicker_end.init(etCal.get(Calendar.YEAR), etCal.get(Calendar.MONTH), etCal.get(Calendar.DAY_OF_MONTH), this);
-        // updateTitle(year, monthOfYear, dayOfMonth);
 
-        // 如果要隐藏当前日期，则使用下面方法。
+        // hide Day
         if (!isDayVisible) {
             hidDay(mDatePicker_start);
             hidDay(mDatePicker_end);
         }
 
-        //设置最大时间
-        String today = DateUtils.getAddDayString(0);
-        try {
-            mDatePicker_start.setMaxDate(formatter.parse(today).getTime());
-            mDatePicker_end.setMaxDate(formatter.parse(today).getTime());
-        } catch (ParseException e){
-            e.printStackTrace();
+        // set maxDate
+        if(!maxDate.equals("")){
+            try {
+                mDatePicker_start.setMaxDate(formatter.parse(maxDate).getTime());
+                mDatePicker_end.setMaxDate(formatter.parse(maxDate).getTime());
+            } catch (ParseException e){
+//                e.printStackTrace();
+                mPromise.reject("-1", e);
+            }
         }
     }
 
@@ -140,21 +177,15 @@ public class DoubleDatePickerDialog extends AlertDialog implements OnClickListen
                 Object dayPicker = new Object();
                 try {
                     dayPicker = datePickerField.get(mDatePicker);
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                } catch (IllegalArgumentException e) {
-                    e.printStackTrace();
+                } catch (Exception e) {
+                    mPromise.reject("-1", e);
                 }
-                // datePicker.getCalendarView().setVisibility(View.GONE);
                 ((View) dayPicker).setVisibility(View.GONE);
             }
         }
     }
 
     public void onClick(DialogInterface dialog, int which) {
-        // Log.d(this.getClass().getSimpleName(), String.format("which:%d",
-        // which));
-        // 如果是“取 消”按钮，则返回，如果是“确 定”按钮，则往下执行
         if (which == BUTTON_POSITIVE)
             tryNotifyDateSet();
     }
@@ -165,11 +196,10 @@ public class DoubleDatePickerDialog extends AlertDialog implements OnClickListen
             mDatePicker_start.init(year, month, day, this);
         if (view.getId() == R.id.datePickerEnd)
             mDatePicker_end.init(year, month, day, this);
-        // updateTitle(year, month, day);
     }
 
     /**
-     * 获得开始日期的DatePicker
+     * Get start date picker
      *
      * @return The calendar view.
      */
@@ -178,7 +208,7 @@ public class DoubleDatePickerDialog extends AlertDialog implements OnClickListen
     }
 
     /**
-     * 获得结束日期的DatePicker
+     * Get en date picker
      *
      * @return The calendar view.
      */
@@ -214,13 +244,12 @@ public class DoubleDatePickerDialog extends AlertDialog implements OnClickListen
             mDatePicker_end.clearFocus();
             mCallBack.onDateSet(mDatePicker_start, mDatePicker_start.getYear(), mDatePicker_start.getMonth(),
                     mDatePicker_start.getDayOfMonth(), mDatePicker_end, mDatePicker_end.getYear(),
-                    mDatePicker_end.getMonth(), mDatePicker_end.getDayOfMonth());
+                    mDatePicker_end.getMonth(), mDatePicker_end.getDayOfMonth(), mPromise);
         }
     }
 
     @Override
     protected void onStop() {
-        // tryNotifyDateSet();
         super.onStop();
     }
 
