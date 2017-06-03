@@ -19,7 +19,7 @@ import {
   Text,
   View,
 } from "react-native";
-import DoubleDatePicker from 'DoubleDatePicker';
+import DoubleDatePicker from 'react-native-double-date-picker';
 
 class DoubleDatePickerExample extends Component {
 
