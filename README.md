@@ -6,6 +6,7 @@ This is a Android date picker component just simply developed for that start dat
 
 # Install
 `npm install react-native-double-date-picker --save`
+
 `react-native link`
 
 # Usage
