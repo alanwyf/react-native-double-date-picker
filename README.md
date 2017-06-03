@@ -1,5 +1,5 @@
 # react-native-double-date-picker 
-[![](https://img.shields.io/badge/npm%20package-0.2.0-green.svg)](https://www.npmjs.com/package/react-native-double-date-picker)
+[![](https://img.shields.io/badge/npm%20package-0.3.0-green.svg)](https://www.npmjs.com/package/react-native-double-date-picker)
 
 This is a Android date picker component just simply developed for that start date and end date are required to be in a single modal.
 
